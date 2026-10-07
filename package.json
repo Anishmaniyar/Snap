@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "pnpm --filter @snap/api dev",
+    "build": "pnpm --recursive build",
+    "db:generate": "pnpm --filter @snap/database generate"
   },
   "keywords": [],
   "author": "",
