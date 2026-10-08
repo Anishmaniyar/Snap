@@ -1,7 +1,17 @@
-// TODO: map AppError -> statusCode + stable JSON body; log unexpected errors;
-// never expose stack traces or internals in production responses.
-export const errorHandler = (_err, _req, res, _next) => {
-    // TODO: replace with AppError-aware implementation.
-    res.status(500).json({ error: "Internal Server Error" });
+// Converts thrown errors into JSON responses, hiding non-operational error details.
+export const globalErrorHandler = (err, req, res, next) => {
+    err.statusCode = err.statusCode || 500;
+    err.status = err.status || "error";
+    if (err.isOperational) {
+        return res.status(err.statusCode).json({
+            status: err.status,
+            message: err.message,
+        });
+    }
+    console.error("💥 ERROR:", err);
+    return res.status(500).json({
+        status: "error",
+        message: "Something went very wrong!",
+    });
 };
 //# sourceMappingURL=error.middleware.js.map

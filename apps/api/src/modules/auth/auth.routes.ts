@@ -1,7 +1,22 @@
 import { Router } from "express";
+import * as authController from "./auth.controller.js";
+import * as authSchemaValidator from "./auth.schema.js";
+import { validateRequest } from "../../middleware/validation.middleware.js";
 
-export const authRouter = Router();
+const authRouter = Router();
 
-// TODO: POST /signup -> validate(signup schema) -> authController.signup
-// TODO: POST /login  -> validate(login schema)  -> authController.login
-// TODO: POST /logout -> authController.logout (clears refresh-token cookie)
+authRouter.post(
+  "/signup",
+  validateRequest(authSchemaValidator.signupSchema),
+  authController.signup,
+);
+
+authRouter.post(
+  "/login",
+  validateRequest(authSchemaValidator.loginSchema),
+  authController.login,
+);
+
+authRouter.post("/logout", authController.logout);
+
+export default authRouter;

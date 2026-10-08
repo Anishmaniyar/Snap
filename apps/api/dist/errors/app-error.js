@@ -1,11 +1,14 @@
-// Simple application error abstraction. error.middleware.ts maps this to HTTP responses.
-// TODO: extend with error codes as needed:
-// validation | authentication | authorization | notFound | conflict | expired | internal.
-export class AppError extends Error {
+export default class AppError extends Error {
     statusCode;
-    constructor(message, statusCode = 500) {
+    status;
+    isOperational;
+    // Creates an operational error with an HTTP status code and fail/error status.
+    constructor(message, statusCode) {
         super(message);
         this.statusCode = statusCode;
+        this.status = `${statusCode}`.startsWith("4") ? "fail" : "error";
+        this.isOperational = true;
+        Error.captureStackTrace(this, this.constructor);
     }
 }
 //# sourceMappingURL=app-error.js.map

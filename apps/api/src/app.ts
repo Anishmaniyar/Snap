@@ -1,11 +1,9 @@
 import express from "express";
 import { requestLogger } from "./middleware/request-logger.middleware.js";
 import { notFound } from "./middleware/not-found.middleware.js";
-import { errorHandler } from "./middleware/error.middleware.js";
-// TODO: import routers once implemented:
-// import { authRouter } from "./modules/auth/auth.routes.js";
-// import { userRouter } from "./modules/user/user.routes.js";
-// import { urlRouter } from "./modules/url/url.routes.js";
+import { globalErrorHandler } from "./middleware/error.middleware.js";
+import RootRouter from "./routes/index.js";
+import { redirectToOriginalUrl } from "./modules/url/url.controller.js";
 
 const app = express();
 
@@ -15,16 +13,15 @@ const app = express();
 
 app.use(express.json());
 app.use(requestLogger);
+app.use("/api/v1", RootRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-// TODO: app.use("/api/v1/auth", authRouter);
-// TODO: app.use("/api/v1/urls", urlRouter);
-// TODO: public redirect — GET "/:shortCode" (no requireAuth; 404 inactive/missing, 410 expired, else 302).
+app.get("/:shortCode", redirectToOriginalUrl);
 
 app.use(notFound);
-app.use(errorHandler);
+app.use(globalErrorHandler);
 
 export default app;

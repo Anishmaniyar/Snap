@@ -1,12 +1,13 @@
 import { Router } from "express";
-export const urlRouter = Router();
-// TODO (all protected — requireAuth + validate + ownership check):
-//   POST   /    -> create (body: originalUrl, customAlias?, expiresAt?)
-//   GET    /    -> list own URLs (query: pagination)
-//   GET    /:id -> get one by id
-//   PATCH  /:id -> update (originalUrl / expiresAt / isActive)
-//   DELETE /:id -> delete/deactivate
-//
-// NOTE: public GET /:shortCode redirect is mounted at the app root (see app.ts),
-// NOT under /api/v1/urls, and must stay public (no requireAuth).
+import * as urlController from "./url.controller.js";
+import * as urlSchemaValidator from "./url.schema.js";
+import { validateRequest } from "../../middleware/validation.middleware.js";
+import { authenticate } from "../../middleware/auth.middleware.js";
+const urlRouter = Router();
+urlRouter.post("/", authenticate, validateRequest(urlSchemaValidator.createUrlSchema), urlController.shortUrl);
+urlRouter.get("", authenticate, urlController.getUserUrls);
+urlRouter.get("/:id", authenticate, validateRequest(urlSchemaValidator.getUrlByIdSchema), urlController.getUrlById);
+urlRouter.patch("/:id", authenticate, validateRequest(urlSchemaValidator.updateUrlById), urlController.updateUrlById);
+urlRouter.delete("/:id", authenticate, validateRequest(urlSchemaValidator.deleteUrlById), urlController.deleteUrlById);
+export default urlRouter;
 //# sourceMappingURL=url.routes.js.map

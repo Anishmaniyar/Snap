@@ -1,8 +1,8 @@
 import app from "./app.js";
+import { config } from "./config/config.env.js";
 import logger from "./lib/logger.js";
 
-// TODO: use typed config from ./config/env.js instead of process.env directly.
-const PORT = process.env.PORT || 3000;
+const PORT = config.server.port;
 
 app.listen(PORT, () => {
   logger.info(`API server running on port ${PORT}`);
