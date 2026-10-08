@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@snap/database": "workspace:*",
-    "@prisma/client": "^7.10.0",
+    "@prisma/client": "7.10.0",
     "express": "^5.2.1",
     "ioredis": "^6.0.0",
     "pino": "^10.4.0",
@@ -20,7 +21,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.4",
     "pino-pretty": "^13.2.0",
-    "prisma": "8.0.0-rc.20",
+    "prisma": "7.10.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   }
