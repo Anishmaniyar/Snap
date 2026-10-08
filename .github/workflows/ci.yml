@@ -45,6 +45,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://snap:snap_password@localhost:5432/snap
 
+      - name: Run Prisma migrations
+        run: pnpm --filter @snap/database exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://snap:snap_password@localhost:5432/snap
+
       - name: Typescript
         run: pnpm typecheck
 
