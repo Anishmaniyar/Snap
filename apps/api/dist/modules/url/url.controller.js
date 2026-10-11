@@ -57,10 +57,7 @@ export const updateUrlById = asyncHandler(async (req, res) => {
 export const deleteUrlById = asyncHandler(async (req, res) => {
     const id = req.params.id;
     const userId = req.user.id;
-    const result = await urlService.deleteUrlById(id, userId);
-    return res.status(204).json({
-        status: "success",
-        message: "Url deleted successfully by id",
-    });
+    await urlService.deleteUrlById(id, userId);
+    return res.status(204).send();
 });
 //# sourceMappingURL=url.controller.js.map

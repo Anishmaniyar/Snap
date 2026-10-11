@@ -23,6 +23,7 @@ export const findByUserId = async (userId) => {
     return await db.url.findMany({
         where: {
             userId,
+            isActive: true,
         },
         select: {
             id: true,
@@ -39,6 +40,7 @@ export const findSingleUrl = async (userId, id) => {
         where: {
             id,
             userId,
+            isActive: true,
         },
     });
     if (!url) {
@@ -62,6 +64,7 @@ export const updateUrlData = async (data, userId, id) => {
         where: {
             id,
             userId,
+            isActive: true,
         },
     });
     if (!url) {
@@ -79,6 +82,7 @@ export const deleteUrl = async (id, userId) => {
         where: {
             id,
             userId,
+            isActive: true,
         },
     });
     if (!url) {

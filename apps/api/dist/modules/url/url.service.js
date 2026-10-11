@@ -88,12 +88,42 @@ export const getUrlById = async (id, userId) => {
     if (!url) {
         throw new AppError("url is not valid", 404);
     }
+    if (!url.isActive) {
+        throw new AppError("url is not valid", 404);
+    }
+    // Expiration affects redirection only — the owner can still manage
+    // (retrieve) an expired URL.
     const shortUrl = `${config.app.baseUrl}/${url.shortCode}`;
     return { ...url, shortUrl };
 };
 export const updateUrlById = async (body, userId, id) => {
-    const update = await urlRepository.updateUrlData(body, userId, id);
-    return update;
+    if (!body || Object.keys(body).length === 0) {
+        throw new AppError("At least one field must be provided", 400);
+    }
+    // Whitelist supported fields. shortCode is immutable and customAlias
+    // must never modify an existing short code — both are dropped here
+    // (Zod also strips unknown keys before the controller runs).
+    const data = {};
+    if (body.originalUrl !== undefined) {
+        data.originalUrl = body.originalUrl;
+    }
+    if (body.expiresAt !== undefined) {
+        const raw = body.expiresAt;
+        if (raw === null) {
+            data.expiresAt = null;
+        }
+        else {
+            const parsed = parseExpiresAt(raw);
+            if (parsed !== undefined) {
+                data.expiresAt = parsed;
+            }
+        }
+    }
+    if (Object.keys(data).length === 0) {
+        throw new AppError("At least one field must be provided", 400);
+    }
+    const update = await urlRepository.updateUrlData(data, userId, id);
+    return toResponse(update);
 };
 export const deleteUrlById = async (id, userId) => {
     const url = await urlRepository.deleteUrl(id, userId);

@@ -50,6 +50,19 @@ jobs:
         env:
           DATABASE_URL: postgresql://snap:snap_password@localhost:5432/snap
 
+      - name: Create test database
+        run: >
+          PGPASSWORD=snap_password psql -h localhost -U snap -d snap
+          -tc "SELECT 1 FROM pg_database WHERE datname = 'snap_test'"
+          | grep -q 1 ||
+          PGPASSWORD=snap_password psql -h localhost -U snap -d snap
+          -c "CREATE DATABASE snap_test;"
+
+      - name: Run Prisma migrations (test database)
+        run: pnpm --filter @snap/database exec prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://snap:snap_password@localhost:5432/snap_test
+
       - name: Typescript
         run: pnpm typecheck
 
@@ -58,3 +71,5 @@ jobs:
 
       - name: Test
         run: pnpm test
+        env:
+          DATABASE_URL: postgresql://snap:snap_password@localhost:5432/snap_test

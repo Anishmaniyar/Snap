@@ -1,0 +1,10 @@
+{
+  // Typechecks production code plus the vitest suite without disturbing the
+  // build layout (the build tsconfig keeps rootDir ./src -> dist/).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src", "tests", "vitest.config.ts"]
+}

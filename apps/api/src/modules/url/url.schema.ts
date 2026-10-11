@@ -26,11 +26,24 @@ export const getUrlByIdSchema = z.object({
 });
 
 export const updateUrlById = z.object({
-  body: z.object({
-    originalUrl: z.url("Invalid URL format").optional(),
+  body: z
+    .object({
+      originalUrl: z.url("Invalid URL format").optional(),
 
-    expiresAt: z.iso.datetime("Invalid expiresAt datetime").optional(),
-  }),
+      // Nullable: `expiresAt: null` clears expiry (fits the Prisma
+      // `DateTime?` optional field — null removes the stored date).
+      // Unknown keys (shortCode, customAlias, ...) are stripped by Zod's
+      // default behavior, so the short code stays immutable.
+      expiresAt: z
+        .union([
+          z.iso.datetime("Invalid expiresAt datetime"),
+          z.null(),
+        ])
+        .optional(),
+    })
+    .refine((body) => Object.keys(body).length > 0, {
+      message: "At least one field must be provided",
+    }),
 
   params: z.object({
     id: z.uuid("Requires a valid id format"),
