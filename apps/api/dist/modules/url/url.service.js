@@ -2,6 +2,7 @@ import { config } from "../../config/config.env.js";
 import AppError from "../../errors/app-error.js";
 import { generateShortCode } from "./url.code.js";
 import * as urlRepository from "./url.repository.js";
+import logger from "../../lib/logger.js";
 const MAX_GENERATION_ATTEMPTS = 5;
 // Prisma P2002 = unique constraint violation. Duck-typed (code check)
 // so it works regardless of which @prisma/client copy threw the error.
@@ -40,6 +41,11 @@ export const createShortUrl = async (originalUrl, userId, shortCode, expiresAt) 
     if (alias) {
         try {
             const url = await urlRepository.createUrl(toCreateInput(originalUrl, alias, userId, expiresAtDate));
+            logger.info({
+                userId,
+                urlId: url.id,
+                shortCode: url.shortCode,
+            }, "Short URL created with custom alias");
             return toResponse(url);
         }
         catch (error) {
@@ -53,6 +59,11 @@ export const createShortUrl = async (originalUrl, userId, shortCode, expiresAt) 
     for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt++) {
         try {
             const url = await urlRepository.createUrl(toCreateInput(originalUrl, generateShortCode(), userId, expiresAtDate));
+            logger.info({
+                userId,
+                urlId: url.id,
+                shortCode: url.shortCode,
+            }, "Short URL created with generated code");
             return toResponse(url);
         }
         catch (error) {
@@ -61,6 +72,9 @@ export const createShortUrl = async (originalUrl, userId, shortCode, expiresAt) 
             }
         }
     }
+    // Unexpected system failure (not a business error): AppError 5xx is not
+    // logged by the global handler, so log diagnostics here — the single owner.
+    logger.error({ userId, attempts: MAX_GENERATION_ATTEMPTS }, "Failed to generate unique short code");
     throw new AppError("Failed to generate unique short code, try again", 500);
 };
 export const getOriginalUrl = async (shortCode) => {
@@ -74,10 +88,18 @@ export const getOriginalUrl = async (shortCode) => {
     if (url.expiresAt && url.expiresAt < new Date()) {
         throw new AppError("Short code has expired", 410);
     }
+    logger.debug({
+        urlId: url.id,
+        shortCode,
+    }, "Short URL resolved for redirect");
     return toResponse(url);
 };
 export const getUserUrls = async (userId) => {
     const urls = await urlRepository.findByUserId(userId);
+    logger.debug({
+        userId,
+        resultCount: urls.length,
+    }, "User URLs fetched");
     return urls.map((url) => ({
         ...url,
         shortUrl: `${config.app.baseUrl}/${url.shortCode}`,
@@ -91,18 +113,17 @@ export const getUrlById = async (id, userId) => {
     if (!url.isActive) {
         throw new AppError("url is not valid", 404);
     }
-    // Expiration affects redirection only — the owner can still manage
-    // (retrieve) an expired URL.
     const shortUrl = `${config.app.baseUrl}/${url.shortCode}`;
+    logger.debug({
+        userId,
+        urlId: id,
+    }, "User URL fetched by ID");
     return { ...url, shortUrl };
 };
 export const updateUrlById = async (body, userId, id) => {
     if (!body || Object.keys(body).length === 0) {
         throw new AppError("At least one field must be provided", 400);
     }
-    // Whitelist supported fields. shortCode is immutable and customAlias
-    // must never modify an existing short code — both are dropped here
-    // (Zod also strips unknown keys before the controller runs).
     const data = {};
     if (body.originalUrl !== undefined) {
         data.originalUrl = body.originalUrl;
@@ -123,10 +144,19 @@ export const updateUrlById = async (body, userId, id) => {
         throw new AppError("At least one field must be provided", 400);
     }
     const update = await urlRepository.updateUrlData(data, userId, id);
+    logger.info({
+        userId,
+        urlId: update.id,
+        updatedFields: Object.keys(data),
+    }, "Short URL updated");
     return toResponse(update);
 };
 export const deleteUrlById = async (id, userId) => {
     const url = await urlRepository.deleteUrl(id, userId);
+    logger.info({
+        userId,
+        urlId: id,
+    }, "Short URL deletion completed");
     return url;
 };
 //# sourceMappingURL=url.service.js.map

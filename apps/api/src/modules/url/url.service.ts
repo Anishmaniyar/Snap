@@ -2,6 +2,7 @@ import { config } from "../../config/config.env.js";
 import AppError from "../../errors/app-error.js";
 import { generateShortCode } from "./url.code.js";
 import * as urlRepository from "./url.repository.js";
+import logger from "../../lib/logger.js";
 
 const MAX_GENERATION_ATTEMPTS = 5;
 
@@ -76,6 +77,16 @@ export const createShortUrl = async (
       const url = await urlRepository.createUrl(
         toCreateInput(originalUrl, alias, userId, expiresAtDate),
       );
+
+      logger.info(
+        {
+          userId,
+          urlId: url.id,
+          shortCode: url.shortCode,
+        },
+        "Short URL created with custom alias",
+      );
+
       return toResponse(url);
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -91,6 +102,16 @@ export const createShortUrl = async (
       const url = await urlRepository.createUrl(
         toCreateInput(originalUrl, generateShortCode(), userId, expiresAtDate),
       );
+
+      logger.info(
+        {
+          userId,
+          urlId: url.id,
+          shortCode: url.shortCode,
+        },
+        "Short URL created with generated code",
+      );
+
       return toResponse(url);
     } catch (error) {
       if (!isUniqueViolation(error)) {
@@ -98,6 +119,13 @@ export const createShortUrl = async (
       }
     }
   }
+
+  // Unexpected system failure (not a business error): AppError 5xx is not
+  // logged by the global handler, so log diagnostics here — the single owner.
+  logger.error(
+    { userId, attempts: MAX_GENERATION_ATTEMPTS },
+    "Failed to generate unique short code",
+  );
 
   throw new AppError("Failed to generate unique short code, try again", 500);
 };
@@ -117,11 +145,27 @@ export const getOriginalUrl = async (shortCode: string) => {
     throw new AppError("Short code has expired", 410);
   }
 
+  logger.debug(
+    {
+      urlId: url.id,
+      shortCode,
+    },
+    "Short URL resolved for redirect",
+  );
+
   return toResponse(url);
 };
 
 export const getUserUrls = async (userId: string) => {
   const urls = await urlRepository.findByUserId(userId);
+
+  logger.debug(
+    {
+      userId,
+      resultCount: urls.length,
+    },
+    "User URLs fetched",
+  );
 
   return urls.map((url) => ({
     ...url,
@@ -140,9 +184,15 @@ export const getUrlById = async (id: string, userId: string) => {
     throw new AppError("url is not valid", 404);
   }
 
-  // Expiration affects redirection only — the owner can still manage
-  // (retrieve) an expired URL.
   const shortUrl = `${config.app.baseUrl}/${url.shortCode}`;
+
+  logger.debug(
+    {
+      userId,
+      urlId: id,
+    },
+    "User URL fetched by ID",
+  );
 
   return { ...url, shortUrl };
 };
@@ -156,9 +206,6 @@ export const updateUrlById = async (
     throw new AppError("At least one field must be provided", 400);
   }
 
-  // Whitelist supported fields. shortCode is immutable and customAlias
-  // must never modify an existing short code — both are dropped here
-  // (Zod also strips unknown keys before the controller runs).
   const data: { originalUrl?: string; expiresAt?: Date | null } = {};
 
   if (body.originalUrl !== undefined) {
@@ -183,11 +230,28 @@ export const updateUrlById = async (
 
   const update = await urlRepository.updateUrlData(data, userId, id);
 
+  logger.info(
+    {
+      userId,
+      urlId: update.id,
+      updatedFields: Object.keys(data),
+    },
+    "Short URL updated",
+  );
+
   return toResponse(update);
 };
 
 export const deleteUrlById = async (id: string, userId: string) => {
   const url = await urlRepository.deleteUrl(id, userId);
+
+  logger.info(
+    {
+      userId,
+      urlId: id,
+    },
+    "Short URL deletion completed",
+  );
 
   return url;
 };

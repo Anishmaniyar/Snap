@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { ZodError, type ZodType } from "zod";
 import AppError from "../errors/app-error.js";
+import logger from "../lib/logger.js";
 
 // Validates body, query, and params against a Zod schema before the controller runs.
 export const validateRequest = (schema: ZodType): RequestHandler => {
@@ -38,8 +39,17 @@ export const validateRequest = (schema: ZodType): RequestHandler => {
           .map((issue) => issue.path.join("."))
           .join(", ");
 
-        console.warn(
-          `[validate] 400 ${req.method} ${req.originalUrl} - invalid field(s): ${failedFields} (${errorMessage})`,
+        // Structured warn via Pino (not console): field names only, never
+        // submitted values. Uses req.path so query-string values (which may
+        // carry secrets) are never written to logs.
+        logger.warn(
+          {
+            method: req.method,
+            path: req.path,
+            statusCode: 400,
+            invalidFields: failedFields,
+          },
+          "Request validation failed",
         );
 
         return next(new AppError(errorMessage, 400));

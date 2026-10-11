@@ -17,16 +17,9 @@ const envSchema = z.object({
     JWT_REFRESH_SECRET: z
         .string()
         .min(1, { message: "JWT_REFRESH_SECRET is required" }),
-    WORKER_CONCURRENCY: z.coerce.number().min(1).default(5),
-    WORKER_ID: z.string().default("unknown-worker"),
-    GLOBAL_CONCURRENCY: z.coerce.number().min(1).default(6),
-    SCHEDULER_POOL_INTERVAL: z.coerce.number().min(5000).default(15000),
-    SCHEDULER_BATCH_SIZE: z.coerce.number().min(5).default(5),
-    SCHEDULER_ID: z.string().default("unknown-scheduler"),
-    IDEMPOTENCY_PROCESSING_TIMEOUT_MS: z.coerce.number(),
-    EXECUTION_TIMEOUT_MS: z.coerce.number().int().positive(),
-    LEASE_DURATION_MS: z.coerce.number().int().positive().default(30000),
-    HEARTBEAT_INTERVAL_MS: z.coerce.number().int().positive().default(10000),
+    LOG_LEVEL: z
+        .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
+        .default("info"),
 });
 const parsedEnv = envSchema.safeParse(process.env);
 if (!parsedEnv.success) {
@@ -49,6 +42,9 @@ export const config = Object.freeze({
     auth: Object.freeze({
         accessSecret: env.JWT_ACCESS_SECRET,
         refreshSecret: env.JWT_REFRESH_SECRET,
+    }),
+    logging: Object.freeze({
+        level: env.LOG_LEVEL,
     }),
 });
 //# sourceMappingURL=config.env.js.map

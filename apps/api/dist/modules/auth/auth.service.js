@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import AppError from "../../errors/app-error.js";
 import { signAccessToken, signRefreshToken } from "../../lib/jwt.js";
+import logger from "../../lib/logger.js";
 import * as authRepository from "./auth.repository.js";
 const toSafeUser = (user) => ({
     id: user.id,
@@ -16,6 +17,8 @@ export const signup = async (name, email, password) => {
     }
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await authRepository.createUser({ name, email, passwordHash });
+    // Minimum identifiers only: userId, never email/password/tokens.
+    logger.info({ userId: user.id }, "User registered successfully");
     return {
         user: toSafeUser(user),
         accessToken: signAccessToken(user.id),
@@ -25,12 +28,18 @@ export const signup = async (name, email, password) => {
 export const login = async (email, password) => {
     const user = await authRepository.findByEmail(email);
     if (!user) {
+        // No email or userId here: avoids logging PII for unknown accounts
+        // and avoids confirming account existence in logs.
+        logger.warn({ reason: "unknown_account" }, "Login failed");
         throw new AppError("Invalid email or password", 401);
     }
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
+        // Never log the submitted password or tokens.
+        logger.warn({ userId: user.id, reason: "invalid_password" }, "Login failed");
         throw new AppError("Invalid email or password", 401);
     }
+    logger.info({ userId: user.id }, "User logged in successfully");
     return {
         user: toSafeUser(user),
         accessToken: signAccessToken(user.id),

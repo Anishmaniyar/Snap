@@ -1,26 +1,34 @@
 import type { Request, Response, NextFunction } from "express";
+import logger from "../lib/logger.js";
+import AppError from "../errors/app-error.js";
 
 // Converts thrown errors into JSON responses, hiding non-operational error details.
 export const globalErrorHandler = (
-  err: any,
+  err: unknown,
   req: Request,
   res: Response,
-  next: NextFunction,
+  _next: NextFunction,
 ) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || "error";
+  const isAppError = err instanceof AppError;
 
-  if (err.isOperational) {
-    return res.status(err.statusCode).json({
-      status: err.status,
-      message: err.message,
-    });
+  const statusCode = isAppError ? err.statusCode : 500;
+  const status = isAppError ? err.status : "error";
+
+  if (!isAppError) {
+    logger.error(
+      {
+        requestId: res.locals.requestId,
+        method: req.method,
+        path: req.path,
+        statusCode,
+        err,
+      },
+      "Unexpected error while handling HTTP request",
+    );
   }
 
-  console.error("💥 ERROR:", err);
-
-  return res.status(500).json({
-    status: "error",
-    message: "Something went very wrong!",
+  return res.status(statusCode).json({
+    status,
+    message: isAppError ? err.message : "Something went very wrong!",
   });
 };

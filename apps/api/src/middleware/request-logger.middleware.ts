@@ -2,6 +2,7 @@
 // Never log passwords, tokens, cookies, secrets, or full request bodies.
 import type { Request, Response, NextFunction } from "express";
 import logger from "../lib/logger.js";
+import { randomUUID } from "crypto";
 
 export function requestLogger(
   req: Request,
@@ -10,19 +11,26 @@ export function requestLogger(
 ): void {
   const start = Date.now();
 
+  const requestId = randomUUID();
+
+  res.locals.requestId = requestId;
+
   res.on("finish", () => {
     const duration = Date.now() - start;
 
     logger.info(
       {
+        requestId,
         method: req.method,
-        path: req.originalUrl,
+        path: req.path,
         statusCode: res.statusCode,
-        duration,
+        durationMs: duration,
       },
       "HTTP request",
     );
   });
+
+  res.setHeader("X-Request-ID", requestId);
 
   next();
 }
