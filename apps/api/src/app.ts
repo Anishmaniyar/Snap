@@ -4,6 +4,7 @@ import { notFound } from "./middleware/not-found.middleware.js";
 import { globalErrorHandler } from "./middleware/error.middleware.js";
 import RootRouter from "./routes/index.js";
 import { redirectToOriginalUrl } from "./modules/url/url.controller.js";
+import { metricsHandler, metricsMiddleware } from "./lib/metrics.js";
 
 const app = express();
 
@@ -13,11 +14,15 @@ const app = express();
 
 app.use(express.json());
 app.use(requestLogger);
+app.use(metricsMiddleware);
+
 app.use("/api/v1", RootRouter);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
+
+app.get("/metrics", metricsHandler);
 
 app.get("/:shortCode", redirectToOriginalUrl);
 
