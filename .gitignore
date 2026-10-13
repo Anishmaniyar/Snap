@@ -3,3 +3,7 @@ node_modules/
 .env
 
 .next/
+
+# Build output (rebuilt by tsc / Docker, never commit)
+dist/
+**/dist/

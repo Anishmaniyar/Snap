@@ -1,5 +1,19 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
 services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: snap
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-snap}:${POSTGRES_PASSWORD:-snap_password}@postgres:5432/${POSTGRES_DB:-snap}?schema=public"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+
   postgres:
     image: postgres:17
     container_name: snap-postgres
@@ -23,5 +37,49 @@ services:
       retries: 5
       start_period: 10s
 
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    container_name: snap-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: snap-loki
+    restart: unless-stopped
+    command: "-config.file=/etc/loki/local-config.yaml"
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+
+  grafana:
+    image: grafana/grafana:13.2.2
+    container_name: snap-grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+      - loki
+
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
