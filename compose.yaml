@@ -5,14 +5,20 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     container_name: snap
+    env_file:
+      - path: ./apps/api/.env
+        required: false
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER:-snap}:${POSTGRES_PASSWORD:-snap_password}@postgres:5432/${POSTGRES_DB:-snap}?schema=public"
+      REDIS_URL: ${REDIS_URL:-redis://host.docker.internal:6379}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret}
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "8000:8000"
 
   postgres:
     image: postgres:17
@@ -78,8 +84,25 @@ services:
       - prometheus
       - loki
 
+  alloy:
+    image: grafana/alloy:v1.12.2
+    container_name: snap-alloy
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./monitoring/alloy-config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+    depends_on:
+      - loki
+
 volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
   loki_data:
+  alloy_data:
