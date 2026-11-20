@@ -1,0 +1,49 @@
+/* Snap UI - true-black-flat app sheet (seed 1237121894).
+   Elevation by lightness alone, one hue on data only, inverted primary control. */
+
+:root {
+  --ground: #000000;
+  --surface: #111111;
+  --raised: #2a2a2a;
+  --active: #222222;
+  --border: #1a1a1a;
+  --rule: #161616;
+  --control: #444444;
+  --text: #ffffff;
+  --muted: #b4b4b4;
+  --faint: #949494;
+  --accent: #c6f24e;
+  --positive: #c6f24e;
+  --negative: #e5484d;
+  --warning: #e5a93b;
+  --pill-positive-bg: #222a10;
+  --pill-positive-ink: #c6f24e;
+  --pill-negative-bg: #2c1a20;
+  --pill-negative-ink: #e5566f;
+  --pill-warning-bg: #2b2414;
+  --pill-warning-ink: #e5a93b;
+  --pill-neutral-bg: #222222;
+  --pill-neutral-ink: #ffffff;
+
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-title: 20px;
+  --fs-section: 16px;
+  --fs-kpi: 24px;
+  --fs-body: 14px;
+  --fs-small: 13px;
+
+  --sidebar-width: 210px;
+  --pad: 22px;
+  --gutter: 29px;
+  --gap: 14px;
+  --card-pad: 22px;
+  --radius-card: 20px;
+  --radius-control: 999px;
+  --control-height: 36px;
+  --row-height: 56px;
+  --nav-row: 34px;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-hover: 150ms;
+  --t-press: 120ms;
+}
