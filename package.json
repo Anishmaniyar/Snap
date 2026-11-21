@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "pnpm --filter @snap/api dev",
     "web": "pnpm --filter @snap/web dev",
+    "web:build": "pnpm --filter @snap/web build",
     "typecheck": "pnpm --recursive typecheck",
     "build": "pnpm --recursive build",
     "db:generate": "pnpm --filter @snap/database generate",
